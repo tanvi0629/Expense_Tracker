@@ -1,3 +1,4 @@
+
 {
   "version": 2,
   "name": "expense-tracker-frontend",
@@ -10,10 +11,10 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
