@@ -12,6 +12,8 @@ import PhoneAuthPage from './components/auth/PhoneAuthPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import ExpensesPage from './components/expenses/ExpensesPage'
 import IncomePage from './components/income/IncomePage'
+import RecurringPage    from './components/recurring/RecurringPage'
+import CurrencySettings from './components/settings/CurrencySettings'
 import AppLayout from './components/common/AppLayout'
 import LoadingScreen from './components/common/LoadingScreen'
 
@@ -47,6 +49,8 @@ export default function App() {
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="expenses" element={<ExpensesPage />} />
               <Route path="income" element={<IncomePage />} />
+              <Route path="recurring"       element={<RecurringPage />} />
+              <Route path="settings/currency" element={<CurrencySettings />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

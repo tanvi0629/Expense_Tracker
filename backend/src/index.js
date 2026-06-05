@@ -10,6 +10,8 @@ const authRoutes    = require('./routes/auth')
 const userRoutes    = require('./routes/users')
 const expenseRoutes = require('./routes/expenses')
 const incomeRoutes  = require('./routes/incomes')
+const recurringRoutes = require('./routes/recurring')
+const currencyRoutes  = require('./routes/currency')
 const errorHandler  = require('./middleware/errorHandler')
 
 // Validate required env vars
@@ -55,6 +57,8 @@ app.use('/api/auth',     authRoutes)
 app.use('/api/users',    userRoutes)
 app.use('/api/expenses', expenseRoutes)
 app.use('/api/incomes',  incomeRoutes)
+app.use('/api/recurring', recurringRoutes)
+app.use('/api/currency',  currencyRoutes)
 
 // 404
 app.use((req, res) => res.status(404).json({ message: `Route ${req.method} ${req.path} not found` }))

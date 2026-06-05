@@ -21,6 +21,8 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/expenses',  icon: Receipt,         label: 'Expenses'  },
   { to: '/income',    icon: TrendingUp,      label: 'Income'    },
+  { to: '/recurring',          icon: RotateCcw,       label: 'Recurring'  },
+  { to: '/settings/currency',  icon: Settings,        label: 'Currency'   },
 
 ]
 
