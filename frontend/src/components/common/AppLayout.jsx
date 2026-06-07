@@ -94,7 +94,6 @@ export default function AppLayout() {
         </div>
 
         {/* Nav */}
-        {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {/* Main Navigation */}
           {navItems.map(({ to, icon: Icon, label }) => (
