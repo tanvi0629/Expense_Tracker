@@ -249,117 +249,203 @@
 //     </div>
 //   )
 // }
-// src/components/recurring/RecurringModal.jsx
-import React, { useState, useEffect } from 'react'
-import { X, Loader2 } from 'lucide-react'
+
+
+ // src/components/recurring/RecurringPage.jsx
+import React, { useState } from 'react'
+import { useRecurring } from '../../hooks/useRecurring'
+import RecurringModal from './RecurringModal'
+import { Plus, Trash2, Edit2, Loader2, RefreshCw, RotateCcw, Calendar, Zap } from 'lucide-react'
 import { format } from 'date-fns'
+import clsx from 'clsx'
 
-const CATEGORIES  = ['Food','Transport','Shopping','Entertainment','Bills','Health','Education','Other']
-const FREQUENCIES = [
-  { value: 'daily',   label: 'Daily' },
-  { value: 'weekly',  label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'yearly',  label: 'Yearly' },
-]
+const FREQ_COLORS = {
+  daily:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  weekly:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  monthly: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  yearly:  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+}
 
-export default function RecurringModal({ item, onClose, onSave }) {
-  const isEdit = Boolean(item)
-  const [form, setForm] = useState({
-    title: '', amount: '', category: 'Bills',
-    frequency: 'monthly',
-    startDate: format(new Date(), 'yyyy-MM-dd'),
-    notes: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
+export default function RecurringPage() {
+  const { recurring, loading, add, edit, remove, generateDue } = useRecurring()
+  const [modalOpen, setModalOpen]   = useState(false)
+  const [editItem, setEditItem]     = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+  const [generating, setGenerating] = useState(false)
 
-  useEffect(() => {
-    if (item) setForm({
-      title: item.title, amount: item.amount,
-      category: item.category, frequency: item.frequency,
-      startDate: format(new Date(item.start_date), 'yyyy-MM-dd'),
-      notes: item.notes || ''
-    })
-  }, [item])
+  const fmt = (n) => new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0
+  }).format(n)
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this recurring expense?')) return
+    setDeletingId(id)
+    try { await remove(id) } finally { setDeletingId(null) }
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError(null)
-    if (!form.title.trim()) return setError('Title is required')
-    if (!form.amount || parseFloat(form.amount) <= 0) return setError('Enter a valid amount')
-    setLoading(true)
+  const handleGenerate = async () => {
+    setGenerating(true)
+    try { await generateDue() } finally { setGenerating(false) }
+  }
+
+  const totalMonthly = recurring.reduce((sum, r) => {
+    const multipliers = { daily: 30, weekly: 4, monthly: 1, yearly: 1/12 }
+    return sum + (parseFloat(r.amount) * (multipliers[r.frequency] || 1))
+  }, 0)
+
+  const handleSave = async (data) => {
     try {
-      await onSave({ ...form, amount: parseFloat(form.amount) })
+      console.log('Saving recurring:', data)
+      if (editItem) {
+        await edit(editItem.id, data)
+      } else {
+        await add(data)
+      }
+      setModalOpen(false)
+      setEditItem(null)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save')
-    } finally { setLoading(false) }
+      console.error('Save failed:', err?.response?.data || err.message)
+      throw err
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md card shadow-2xl animate-scale-in">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-          <h2 className="font-bold text-slate-900 dark:text-white">
-            {isEdit ? 'Edit Recurring' : 'Add Recurring Expense'}
-          </h2>
-          <button onClick={onClose} className="btn-ghost p-1.5"><X size={18} /></button>
+    <div className="space-y-5 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Recurring Expenses</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {recurring.length} active · {fmt(totalMonthly)}/month estimated
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="btn-secondary flex items-center gap-2 text-sm"
+          >
+            {generating
+              ? <Loader2 size={16} className="animate-spin" />
+              : <Zap size={16} />
+            }
+            <span className="hidden sm:inline">Generate Due</span>
+          </button>
+          <button
+            onClick={() => { setEditItem(null); setModalOpen(true) }}
+            className="btn-primary flex items-center gap-2 text-sm"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">Add Recurring</span>
+          </button>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">{error}</div>
-          )}
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Title</label>
-            <input type="text" required value={form.title} onChange={e => set('title', e.target.value)}
-              placeholder="e.g. Netflix Subscription" className="input-field" />
+      {/* Info card */}
+      <div className="card p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800">
+        <div className="flex items-start gap-3">
+          <RefreshCw size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">How it works</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+              Add subscriptions, EMIs, rent etc. Click "Generate Due" to automatically
+              create expense entries for all items due today or earlier.
+            </p>
           </div>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Amount (₹)</label>
-              <input type="number" step="0.01" min="0.01" required value={form.amount}
-                onChange={e => set('amount', e.target.value)} placeholder="0.00" className="input-field font-mono" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Frequency</label>
-              <select value={form.frequency} onChange={e => set('frequency', e.target.value)} className="input-field">
-                {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-              </select>
-            </div>
+      {/* List */}
+      <div className="card overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={28} className="animate-spin text-brand-500" />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Category</label>
-              <select value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
+        ) : recurring.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-3">
+              <RefreshCw size={24} className="text-slate-400" />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Start Date</label>
-              <input type="date" required value={form.startDate} onChange={e => set('startDate', e.target.value)} className="input-field" />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Notes <span className="text-slate-400">(optional)</span></label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
-              placeholder="Any notes..." rows={2} className="input-field resize-none" />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? 'Saving...' : isEdit ? 'Update' : 'Add'}
+            <p className="font-semibold text-slate-700 dark:text-slate-300">No recurring expenses</p>
+            <p className="text-sm text-slate-400 mt-1">Add subscriptions, rent, EMIs and more</p>
+            <button
+              onClick={() => { setEditItem(null); setModalOpen(true) }}
+              className="btn-primary mt-4 flex items-center gap-2 text-sm"
+            >
+              <Plus size={16} /> Add First Recurring
             </button>
           </div>
-        </form>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            {recurring.map(item => {
+              const isDue = new Date(item.next_due_date) <= new Date()
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-slate-900 dark:text-white text-sm">{item.title}</p>
+                      <span className={`badge text-xs ${FREQ_COLORS[item.frequency] || ''}`}>
+                        {item.frequency}
+                      </span>
+                      {isDue && (
+                        <span className="badge text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          Due!
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="flex items-center gap-1 text-xs text-slate-400">
+                        <Calendar size={11} />
+                        Next: {format(new Date(item.next_due_date), 'dd MMM yyyy')}
+                      </span>
+                      <span className="text-xs text-slate-400">{item.category}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold font-mono text-slate-900 dark:text-white text-sm">
+                      {fmt(item.amount)}
+                    </p>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { setEditItem(item); setModalOpen(true) }}
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-400 hover:text-slate-700"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500"
+                      >
+                        {deletingId === item.id
+                          ? <Loader2 size={14} className="animate-spin" />
+                          : <Trash2 size={14} />
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <RecurringModal
+          item={editItem}
+          onClose={() => {
+            setModalOpen(false)
+            setEditItem(null)
+          }}
+          onSave={handleSave}
+        />
+      )}
     </div>
   )
 }

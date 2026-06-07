@@ -18,8 +18,8 @@ const RecurringExpense = {
     const freq = VALID_FREQUENCIES.includes(frequency) ? frequency : 'monthly'
     const { rows } = await pool.query(
       `INSERT INTO recurring_expenses (user_id, title, amount, category, frequency, start_date, next_due_date, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$6,$7) RETURNING *`,
-      [userId, title.trim(), parseFloat(amount), cat, freq, startDate, notes?.trim() || null]
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [userId, title.trim(), parseFloat(amount), cat, freq, startDate, startDate, notes?.trim() || null]
     )
     return rows[0]
   },

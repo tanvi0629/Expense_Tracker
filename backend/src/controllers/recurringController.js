@@ -11,6 +11,7 @@ async function getRecurring(req, res, next) {
 
 async function createRecurring(req, res, next) {
   try {
+    console.log('CREATE RECURRING BODY:', req.body)
     const { title, amount, category, frequency, startDate, notes } = req.body
     if (!title?.trim())           return res.status(400).json({ message: 'Title is required' })
     if (!amount || amount <= 0)   return res.status(400).json({ message: 'Amount must be positive' })

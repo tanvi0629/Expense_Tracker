@@ -5,15 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import AIAssistant from './AIAssistant'
 import {
-  LayoutDashboard,
-  Receipt,
-  Sun,
-  Moon,
-  LogOut,
-  Menu,
-  X,
-  TrendingUp,
-  User,
+  LayoutDashboard, Receipt, TrendingUp, RefreshCw,
+  Sun, Moon, LogOut, Menu, X, Settings
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -21,7 +14,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/expenses',  icon: Receipt,         label: 'Expenses'  },
   { to: '/income',    icon: TrendingUp,      label: 'Income'    },
-  { to: '/recurring',          icon: RotateCcw,       label: 'Recurring'  },
+  { to: '/recurring',          icon: RefreshCw,       label: 'Recurring'  },
   { to: '/settings/currency',  icon: Settings,        label: 'Currency'   },
 
 ]
