@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
+import ReceiptUploader from '../receipts/ReceiptUploader'
 
 const CATEGORIES = ['Food','Transport','Shopping','Entertainment','Bills','Health','Education','Other']
 
@@ -13,9 +14,12 @@ export default function ExpenseModal({ expense, onClose, onSave }) {
     category: 'Other',
     date: format(new Date(), 'yyyy-MM-dd'),
     notes: '',
+    receipt: null,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [savedId, setSavedId] = useState(expense?.id || null)
+  const [receiptUrl, setReceiptUrl] = useState(expense?.receipt_url || null)
 
   useEffect(() => {
     if (expense) {
@@ -25,7 +29,9 @@ export default function ExpenseModal({ expense, onClose, onSave }) {
         category: expense.category,
         date: format(new Date(expense.date), 'yyyy-MM-dd'),
         notes: expense.notes || '',
+        receipt: expense.receipt || null,
       })
+      setReceiptUrl(expense.receipt_url || null)
     }
   }, [expense])
 
@@ -38,7 +44,9 @@ export default function ExpenseModal({ expense, onClose, onSave }) {
     if (!form.amount || parseFloat(form.amount) <= 0) return setError('Enter a valid amount')
     setLoading(true)
     try {
-      await onSave({ ...form, amount: parseFloat(form.amount) })
+      const result = await onSave({ ...form, amount: parseFloat(form.amount) })
+      setSavedId(result.id)
+      setReceiptUrl(result.receipt_url || null)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save expense')
     } finally {
@@ -103,6 +111,20 @@ export default function ExpenseModal({ expense, onClose, onSave }) {
               className="input-field resize-none"
             />
           </div>
+          {/* Receipt uploader — show after expense is saved */}
+          {(savedId || isEdit) && (
+            <ReceiptUploader
+              expenseId={savedId || expense?.id}
+              currentReceiptUrl={receiptUrl}
+              onUpdate={setReceiptUrl}
+            />
+          )}
+
+          {!savedId && !isEdit && (
+            <p className="text-xs text-slate-400 text-center">
+              💡 Save the expense first, then you can attach a receipt photo
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>

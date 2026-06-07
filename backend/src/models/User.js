@@ -1,11 +1,10 @@
-// src/models/User.js
+// backend/src/models/User.js
 const pool = require('../config/db')
 
 const User = {
   async findByFirebaseUid(firebaseUid) {
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE firebase_uid = $1',
-      [firebaseUid]
+      'SELECT * FROM users WHERE firebase_uid = $1', [firebaseUid]
     )
     return rows[0] || null
   },
@@ -13,16 +12,6 @@ const User = {
   async findById(id) {
     const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id])
     return rows[0] || null
-  },
-
-  async create({ firebaseUid, name, email, phoneNumber }) {
-    const { rows } = await pool.query(
-      `INSERT INTO users (firebase_uid, name, email, phone_number)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [firebaseUid, name || null, email || null, phoneNumber || null]
-    )
-    return rows[0]
   },
 
   async upsert({ firebaseUid, name, email, phoneNumber }) {
@@ -40,13 +29,14 @@ const User = {
     return rows[0]
   },
 
-  async update(id, { name, monthlyBudget }) {
+  async update(id, { name, monthlyBudget, preferredCurrency }) {
     const fields = []
     const values = []
     let i = 1
 
-    if (name !== undefined)          { fields.push(`name = $${i++}`);            values.push(name) }
-    if (monthlyBudget !== undefined) { fields.push(`monthly_budget = $${i++}`);  values.push(monthlyBudget) }
+    if (name !== undefined)              { fields.push(`name = $${i++}`);               values.push(name) }
+    if (monthlyBudget !== undefined)     { fields.push(`monthly_budget = $${i++}`);     values.push(monthlyBudget) }
+    if (preferredCurrency !== undefined) { fields.push(`preferred_currency = $${i++}`); values.push(preferredCurrency) }
 
     if (fields.length === 0) return this.findById(id)
 
