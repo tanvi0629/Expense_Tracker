@@ -9,29 +9,29 @@ import {
   TrendingDown, TrendingUp, Wallet, PiggyBank,
   Edit2, Check, X, Loader2
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, subDays } from 'date-fns'
 import toast from 'react-hot-toast'
+import AIInsights from './AIInsights'
+import BudgetPrediction from './BudgetPrediction'
 
 const COLORS = ['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899']
-const CATEGORIES = ['Food','Transport','Shopping','Entertainment','Bills','Health','Education','Other']
 
 export default function DashboardPage() {
   const { dbUser, setDbUser } = useAuth()
-  const [expenses, setExpenses] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [expenses, setExpenses]     = useState([])
+  const [loading, setLoading]       = useState(true)
   const [editBudget, setEditBudget] = useState(false)
   const [budgetInput, setBudgetInput] = useState('')
   const [savingBudget, setSavingBudget] = useState(false)
 
-  const budget = dbUser?.monthly_budget || 0
-  const income = budget // treat budget as income for simplicity
+  const budget = parseFloat(dbUser?.monthly_budget || 0)
 
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
         const start = format(startOfMonth(new Date()), 'yyyy-MM-dd')
-        const end = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-        const { data } = await getExpenses({ start_date: start, end_date: end, limit: 200 })
+        const end   = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+        const { data } = await getExpenses({ start_date: start, end_date: end, limit: 500 })
         setExpenses(data.expenses || [])
       } catch (_) {}
       finally { setLoading(false) }
@@ -40,11 +40,11 @@ export default function DashboardPage() {
   }, [])
 
   const totalExpenses = expenses.reduce((s, e) => s + parseFloat(e.amount), 0)
-  const savings = Math.max(0, income - totalExpenses)
-  const savingsPercent = income > 0 ? Math.min(100, (savings / income) * 100) : 0
-  const spentPercent = income > 0 ? Math.min(100, (totalExpenses / income) * 100) : 0
+  const savings       = Math.max(0, budget - totalExpenses)
+  const savingsPercent = budget > 0 ? Math.min(100, (savings / budget) * 100) : 0
+  const spentPercent   = budget > 0 ? Math.min(100, (totalExpenses / budget) * 100) : 0
 
-  // Category breakdown for pie chart
+  // Category breakdown for pie
   const categoryTotals = expenses.reduce((acc, exp) => {
     acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount)
     return acc
@@ -54,18 +54,17 @@ export default function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)
 
-  // Daily spending for area chart (last 14 days)
-  const last14 = Array.from({ length: 14 }, (_, i) => {
-    const d = subMonths(new Date(), 0)
-    d.setDate(new Date().getDate() - (13 - i))
-    return format(d, 'MMM d')
+  // Last 14 days area chart
+  const areaData = Array.from({ length: 14 }, (_, i) => {
+    const d   = subDays(new Date(), 13 - i)
+    const day = format(d, 'MMM d')
+    return {
+      day,
+      amount: expenses
+        .filter(e => format(new Date(e.date), 'MMM d') === day)
+        .reduce((s, e) => s + parseFloat(e.amount), 0)
+    }
   })
-  const areaData = last14.map(day => ({
-    day,
-    amount: expenses
-      .filter(e => format(new Date(e.date), 'MMM d') === day)
-      .reduce((s, e) => s + parseFloat(e.amount), 0)
-  }))
 
   const handleSaveBudget = async () => {
     const val = parseFloat(budgetInput)
@@ -78,18 +77,18 @@ export default function DashboardPage() {
       toast.success('Budget updated!')
     } catch (_) {
       toast.error('Failed to update budget')
-    } finally {
-      setSavingBudget(false)
-    }
+    } finally { setSavingBudget(false) }
   }
 
-  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+  const fmt = (n) => new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0
+  }).format(n)
 
   const stats = [
-    { label: 'Total Expenses', value: fmt(totalExpenses), icon: TrendingDown, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
-    { label: 'Income / Budget', value: fmt(income), icon: TrendingUp, color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-900/20' },
-    { label: 'Savings', value: fmt(savings), icon: PiggyBank, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', sub: `${savingsPercent.toFixed(0)}% of income` },
-    { label: 'Monthly Budget', value: fmt(budget), icon: Wallet, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', editable: true },
+    { label: 'Total Expenses', value: fmt(totalExpenses), icon: TrendingDown, color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-900/20' },
+    { label: 'Monthly Budget', value: fmt(budget),        icon: TrendingUp,   color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-900/20' },
+    { label: 'Savings',        value: fmt(savings),       icon: PiggyBank,    color: 'text-blue-500',  bg: 'bg-blue-50 dark:bg-blue-900/20', sub: `${savingsPercent.toFixed(0)}% of budget` },
+    { label: 'Monthly Budget', value: fmt(budget),        icon: Wallet,       color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', editable: true },
   ]
 
   if (loading) {
@@ -116,8 +115,10 @@ export default function DashboardPage() {
                 <s.icon size={20} className={s.color} />
               </div>
               {s.editable && !editBudget && (
-                <button onClick={() => { setEditBudget(true); setBudgetInput(String(budget)) }}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                <button
+                  onClick={() => { setEditBudget(true); setBudgetInput(String(budget)) }}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
                   <Edit2 size={14} />
                 </button>
               )}
@@ -125,10 +126,15 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-500 mb-1">{s.label}</p>
             {s.editable && editBudget ? (
               <div className="flex items-center gap-1.5">
-                <input type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)}
-                  className="input-field py-1.5 text-sm w-full" />
-                <button onClick={handleSaveBudget} disabled={savingBudget}
-                  className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600">
+                <input
+                  type="number" value={budgetInput}
+                  onChange={e => setBudgetInput(e.target.value)}
+                  className="input-field py-1.5 text-sm w-full"
+                />
+                <button
+                  onClick={handleSaveBudget} disabled={savingBudget}
+                  className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600"
+                >
                   {savingBudget ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 </button>
                 <button onClick={() => setEditBudget(false)} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700">
@@ -144,7 +150,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Budget progress */}
-      {income > 0 && (
+      {budget > 0 && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-slate-900 dark:text-white text-sm">Budget Usage</p>
@@ -160,33 +166,31 @@ export default function DashboardPage() {
           </div>
           <div className="flex justify-between mt-2 text-xs text-slate-400">
             <span>{fmt(totalExpenses)} spent</span>
-            <span>{fmt(Math.max(0, income - totalExpenses))} remaining</span>
+            <span>{fmt(Math.max(0, budget - totalExpenses))} remaining</span>
           </div>
         </div>
       )}
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Area chart */}
         <div className="card p-5 lg:col-span-2">
           <p className="font-semibold text-slate-900 dark:text-white text-sm mb-4">Daily Spending (Last 14 Days)</p>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={areaData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+            <AreaChart data={areaData} margin={{ top:5, right:5, bottom:5, left:0 }}>
               <defs>
                 <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
+                  <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.15} />
                   <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} />
+              <XAxis dataKey="day" tick={{ fontSize:11 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize:11 }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} />
               <Tooltip formatter={(v) => [`₹${v.toFixed(0)}`, 'Amount']} />
               <Area type="monotone" dataKey="amount" stroke="#22c55e" strokeWidth={2} fill="url(#gradGreen)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Pie chart */}
         <div className="card p-5">
           <p className="font-semibold text-slate-900 dark:text-white text-sm mb-4">By Category</p>
           {pieData.length > 0 ? (
@@ -215,6 +219,19 @@ export default function DashboardPage() {
             <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No expenses this month</div>
           )}
         </div>
+      </div>
+
+      {/* ⭐ NEW: AI Insights + Smart Prediction side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <AIInsights
+          expenses={expenses}
+          budget={budget}
+          income={budget}
+        />
+        <BudgetPrediction
+          expenses={expenses}
+          budget={budget}
+        />
       </div>
     </div>
   )
