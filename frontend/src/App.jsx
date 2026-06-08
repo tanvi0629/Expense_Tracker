@@ -13,6 +13,8 @@ import DashboardPage from "./components/dashboard/DashboardPage";
 import ExpensesPage from "./components/expenses/ExpensesPage";
 import IncomePage from "./components/income/IncomePage";
 import RecurringPage from "./components/recurring/RecurringPage";
+import GoalsPage          from './components/goals/GoalsPage'
+import SpendingAlerts     from './components/alerts/SpendingAlerts'
 import CurrencySettings from "./components/settings/CurrencySettings";
 import WeeklyReports from "./components/reports/WeeklyReports";
 import AppLayout from "./components/common/AppLayout";
@@ -88,6 +90,8 @@ export default function App() {
               <Route path="expenses" element={<ExpensesPage />} />
               <Route path="income" element={<IncomePage />} />
               <Route path="recurring" element={<RecurringPage />} />
+              <Route path="goals" element={<GoalsPage />} />
+              <Route path="alerts" element={<SpendingAlerts />} />
               <Route path="settings/currency" element={<CurrencySettings />} />
               <Route path="settings/reports" element={<WeeklyReports />} />{" "}
             </Route>

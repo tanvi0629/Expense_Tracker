@@ -1,4 +1,3 @@
-// src/index.js
 require('dotenv').config()
 const express   = require('express')
 const cors      = require('cors')
@@ -14,6 +13,8 @@ const recurringRoutes = require('./routes/recurring')
 const currencyRoutes  = require('./routes/currency')
 const receiptRoutes   = require('./routes/receipts')
 const reportRoutes    = require('./routes/reports')
+const goalsRoutes     = require('./routes/goals')
+const alertsRoutes    = require('./routes/alerts')
 const errorHandler    = require('./middleware/errorHandler')
 
 const required = ['FIREBASE_PROJECT_ID','FIREBASE_CLIENT_EMAIL','FIREBASE_PRIVATE_KEY','JWT_SECRET']
@@ -50,6 +51,8 @@ app.use('/api/recurring', recurringRoutes)
 app.use('/api/currency',  currencyRoutes)
 app.use('/api/receipts',  receiptRoutes)
 app.use('/api/reports',   reportRoutes)
+app.use('/api/goals',     goalsRoutes)
+app.use('/api/alerts',    alertsRoutes)
 
 app.use((req, res) => res.status(404).json({ message: `Route ${req.method} ${req.path} not found` }))
 app.use(errorHandler)
