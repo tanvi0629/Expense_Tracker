@@ -4,31 +4,31 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import AIAssistant from './AIAssistant'
+import { SpendlyLogo, SpendlyIcon } from './SpendlyLogo'
 import api from '../../services/api'
 import { differenceInDays } from 'date-fns'
 import {
   LayoutDashboard, Receipt, TrendingUp, RefreshCw,
   Target, Bell, Sun, Moon, LogOut, Menu,
-  Settings, Mail, Calendar, BarChart2
+  Settings, Mail, BarChart2
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
-  { to: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard'     },
-  { to: '/expenses',      icon: Receipt,         label: 'Expenses'      },
-  { to: '/income',        icon: TrendingUp,      label: 'Income'        },
-  { to: '/recurring',     icon: RefreshCw,       label: 'Recurring'     },
-  { to: '/goals',         icon: Target,          label: 'Goals'         },
-  { to: '/alerts',        icon: Bell,            label: 'Spending Alerts'},
-  { to: '/heatmap',       icon: BarChart2,       label: 'Heatmap'       },
+  { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard'      },
+  { to: '/expenses',   icon: Receipt,         label: 'Expenses'       },
+  { to: '/income',     icon: TrendingUp,      label: 'Income'         },
+  { to: '/recurring',  icon: RefreshCw,       label: 'Recurring'      },
+  { to: '/goals',      icon: Target,          label: 'Goals'          },
+  { to: '/alerts',     icon: Bell,            label: 'Spending Alerts' },
+  { to: '/heatmap',    icon: BarChart2,       label: 'Heatmap'        },
 ]
 
 const settingsItems = [
-  { to: '/settings/currency', icon: Settings,  label: 'Currency'      },
-  { to: '/settings/reports',  icon: Mail,      label: 'Email Reports' },
+  { to: '/settings/currency', icon: Settings, label: 'Currency'      },
+  { to: '/settings/reports',  icon: Mail,     label: 'Email Reports' },
 ]
 
-// Count unread notifications by checking alerts + recurring due
 async function countUnread(readIds) {
   let count = 0
   try {
@@ -37,14 +37,20 @@ async function countUnread(readIds) {
       api.get('/recurring'),
     ])
     const alerts = alertRes.data.alerts || []
-    count += alerts.filter(a => (a.level === 'exceeded' || a.level === 'critical') && !readIds.has(`budget-exceeded-${a.category}`) && !readIds.has(`budget-critical-${a.category}`)).length
+    count += alerts.filter(a =>
+      (a.level === 'exceeded' || a.level === 'critical') &&
+      !readIds.has(`budget-exceeded-${a.category}`) &&
+      !readIds.has(`budget-critical-${a.category}`)
+    ).length
 
     const recurring = recurRes.data.recurring || []
     const now = new Date()
     count += recurring.filter(r => {
       if (!r.is_active) return false
       const days = differenceInDays(new Date(r.next_due_date), now)
-      return days <= 1 && !readIds.has(`recurring-due-${r.id}`) && !readIds.has(`recurring-tomorrow-${r.id}`)
+      return days <= 1 &&
+        !readIds.has(`recurring-due-${r.id}`) &&
+        !readIds.has(`recurring-tomorrow-${r.id}`)
     }).length
   } catch (_) {}
   return count
@@ -54,8 +60,8 @@ export default function AppLayout() {
   const { user, dbUser, logout } = useAuth()
   const { isDark, toggle }       = useTheme()
   const navigate                 = useNavigate()
-  const [mobileOpen, setMobileOpen]   = useState(false)
-  const [notifCount, setNotifCount]   = useState(0)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [notifCount, setNotifCount] = useState(0)
 
   useEffect(() => {
     const readIds = new Set(JSON.parse(localStorage.getItem('read_notifications') || '[]'))
@@ -83,7 +89,7 @@ export default function AppLayout() {
           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100'
       )}
     >
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <Icon size={18} />
         {badge > 0 && (
           <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -107,20 +113,13 @@ export default function AppLayout() {
         mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-700">
-          <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-            <TrendingUp size={18} className="text-white" />
-          </div>
-          <span className="font-display text-xl font-bold text-slate-900 dark:text-white">Spendly</span>
+        <div className="flex items-center px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+          <SpendlyLogo size="md" />
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {navItems.map(item => (
-            <NavItem key={item.to} {...item} />
-          ))}
-
-          {/* Notifications with badge */}
+        <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
+          {navItems.map(item => <NavItem key={item.to} {...item} />)}
           <NavItem to="/notifications" icon={Bell} label="Notifications" badge={notifCount} />
 
           <div className="pt-4 pb-1">
@@ -134,7 +133,12 @@ export default function AppLayout() {
           <div className="flex items-center gap-3 px-2 py-2">
             {avatarUrl
               ? <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
-              : <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{initials}</div>
+              : (
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: 'linear-gradient(135deg,#534AB7,#22C55E)' }}>
+                  {initials}
+                </div>
+              )
             }
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{displayName}</p>
@@ -154,9 +158,10 @@ export default function AppLayout() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
           <button onClick={() => setMobileOpen(true)} className="btn-ghost p-2"><Menu size={20} /></button>
-          <span className="font-display font-bold text-slate-900 dark:text-white">Spendly</span>
+          <SpendlyLogo size="sm" />
           <div className="flex items-center gap-1">
             <NavLink to="/notifications" className="relative btn-ghost p-2">
               <Bell size={18} />
@@ -166,9 +171,12 @@ export default function AppLayout() {
                 </span>
               )}
             </NavLink>
-            <button onClick={toggle} className="btn-ghost p-2">{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={toggle} className="btn-ghost p-2">
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </header>
+
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
