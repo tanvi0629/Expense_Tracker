@@ -36,8 +36,8 @@ app.use(cors({
   credentials: true,
 }))
 
-app.use('/api/auth', rateLimit({ windowMs: 15*60*1000, max: 100 }))
-app.use('/api',      rateLimit({ windowMs: 15*60*1000, max: 500 }))
+// app.use('/api/auth', rateLimit({ windowMs: 15*60*1000, max: 100 }))
+app.use('/api',      rateLimit({ windowMs: 15*60*1000, max: 2000 }))
 app.use(express.json({ limit: '20mb' }))
 app.use(express.urlencoded({ extended: true, limit: '20mb' }))
 
