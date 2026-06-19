@@ -23,17 +23,17 @@ import AppLayout from "./components/common/AppLayout";
 import LoadingScreen from "./components/common/LoadingScreen";
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
+  const { user, loading } = useAuth()
+  if (loading) return <LoadingScreen />
+  if (!user) return <Navigate to="/login" replace />
+  return children
 }
 
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (user) return <Navigate to="/dashboard" replace />;
-  return children;
+  const { user, loading } = useAuth()
+  if (loading) return <LoadingScreen />
+  if (user) return <Navigate to="/dashboard" replace />
+  return children
 }
 
 export default function App() {
